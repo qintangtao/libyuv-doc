@@ -1,0 +1,114 @@
+ 1.安装clang
+
+  下载地址:https://releases.llvm.org/download.html#3.7.0
+
+  Clang for Windows (64-bit) (.sig)
+
+  需要将LLVM的BIN目录添加到环境变量中以便于命令可以运行clang
+
+2.安装mingw64
+  安装完成以后可能提示缺少头文件,所以需要下载mingw64
+  将mingw64下面的bin目录添加到环境变量中(确保bin中有mingw32-make.exe)
+
+3.安装cmake
+	https://cmake.org/download/
+	本人下载的是3.17.0
+
+4.下载libyuv
+	https://github.com/lemenkov/libyuv
+
+5.创建新的cmake工程 
+	命名为libyuv_clang,然后创建目录src include lib等目录
+	
+	1).将下载到libyuv的代码source所有代码全部拷贝到src中
+
+	2).将下载到libyuv的代码include所有代码拷贝到include中
+
+	3).lib可以添加def文件 .def文件格式定义在此不再累述
+
+	4).编写CMakelist.txt 最后:
+
+6. 创建build目录(cmd)
+	6.1 pushd H:\work\third\libyuv_clang\build
+	6.2 cmake -G "MinGW Makefiles" -DCMAKE_SH="CMAKE_SH-NOTFOUND" ../
+	6.3 mingw32-make.exe
+
+	注意：
+		-G "MinGW Makefiles" 指定编译器，不然会生成vs的编译文件
+		-DCMAKE_SH="CMAKE_SH-NOTFOUND" 解决报找到sh.exe错误
+		MinGW/bin/mingw32-make.exe 复制为make.exe 符合linux下习惯。
+
+7. 生成def
+	"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\dumpbin.exe" /exports libyuv.dll > libyuv.def
+	
+8. 生成lib
+	"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\lib.exe" /def:libyuv.def /machine:64 /out:libyuv.lib
+
+
+CMakeLists.txt
+	cmake_minimum_required(VERSION 2.8)
+
+	SET (CMAKE_C_COMPILER             	"clang")
+	SET (CMAKE_C_FLAGS                	"-Wall -std=c99")
+	SET (CMAKE_C_FLAGS_DEBUG          	"-g")
+	SET (CMAKE_C_FLAGS_MINSIZEREL     	"-Os -DNDEBUG")
+	SET (CMAKE_C_FLAGS_RELEASE        	"-O4 -DNDEBUG")
+	SET (CMAKE_C_FLAGS_RELWITHDEBINFO 	"-O2 -g")
+	 
+	SET (CMAKE_CXX_COMPILER             "clang++")
+	SET (CMAKE_CXX_FLAGS                "-Wall -std=c++11")
+	SET (CMAKE_CXX_FLAGS_DEBUG          "-g")
+	SET (CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
+	SET (CMAKE_CXX_FLAGS_RELEASE        "-O4 -DNDEBUG")
+	SET (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+	 
+	SET (CMAKE_AR      "llvm-ar")
+	SET (CMAKE_LINKER  "llvm-ld")
+	SET (CMAKE_NM      "llvm-nm")
+	SET (CMAKE_OBJDUMP "llvm-objdump")
+	SET (CMAKE_RANLIB  "llvm-ranlib")
+
+
+	#project(yuv)
+
+
+	#find_package(LLVM REQUIRED CONFIG)
+
+	SET(CMAKE_BUILD_TYPE Release)
+
+	set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+	set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+
+	#set(CMAKE_CXX_STANDARD 11)
+	set(CMAKE_VERBOSE_MAKEFILE ON)
+
+
+	SET ( ly_base_dir	${PROJECT_SOURCE_DIR} )
+	SET ( ly_src_dir	${ly_base_dir}/src )
+	SET ( ly_inc_dir	${ly_base_dir}/include )
+	SET ( ly_lib_name	yuv )
+	SET ( ly_lib_static	${ly_lib_name} )
+	SET ( ly_lib_shared	${ly_lib_name}_shared )
+
+	FILE ( GLOB_RECURSE	ly_source_files ${ly_src_dir}/*.cc )
+	LIST ( SORT			ly_source_files )
+
+	INCLUDE_DIRECTORIES( 
+		BEFORE ${ly_inc_dir} 
+		${LLVM_INCLUDE_DIRS}
+	)
+
+	#add_definitions(${LLVM_DEFINITIONS})
+
+	#add_library(yuv SHARED ${ly_source_files} ${PROJECT_SOURCE_DIR}/lib/libyuv.def)
+	#add_library(yuv SHARED ${ly_source_files})
+	#target_link_libraries(yuv -fPIC -Wl,-Bsymbolic ${llvm_libs})
+
+	# this creates the static library (.a)
+	ADD_LIBRARY				( ${ly_lib_static} STATIC ${ly_source_files} )
+
+	# this creates the shared library (.dll)
+	ADD_LIBRARY				( ${ly_lib_shared} SHARED ${ly_source_files} )
+	target_link_libraries(${ly_lib_shared} -fPIC -Wl,-Bsymbolic ${llvm_libs} gcc)
+	SET_TARGET_PROPERTIES	( ${ly_lib_shared} PROPERTIES OUTPUT_NAME "${ly_lib_name}" )
+	SET_TARGET_PROPERTIES	( ${ly_lib_shared} PROPERTIES PREFIX "lib" )
