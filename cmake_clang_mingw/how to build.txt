@@ -1,6 +1,11 @@
-https://blog.csdn.net/fengchu3415/article/details/84871710
+libyuv是Google开源的实现各种YUV与RGB之间相互转换、旋转、缩放的库。它是跨平台的，，支持SSE、AVX、NEON等SIMD指令加速.VS 2015 WIN64等编译出来的库无法使用SIMD指令,效率大大降低!
 
- 1.安装clang
+网上提供的办法都是基于gclient进行代码下载,由于google仓库在国外,翻墙需要花费大量人力物力,经过研究可以直接用clang来编译libyuv,特供大家参考.
+————————————————
+版权声明：本文为CSDN博主「shore1000」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/shore1000/article/details/107541122
+
+1.安装clang
 
   下载地址:https://releases.llvm.org/download.html#3.7.0
 
